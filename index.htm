@@ -1,0 +1,105 @@
+<html>
+<head>
+<title>Facebook Profile Images Application</title>
+<!-- Include the Facebook Javascript API -->
+<script src="http://connect.facebook.net/en_US/all.js"></script>
+<!-- Include the normal stylesheet-->
+<link href="style.css" rel="stylesheet" />
+
+<!-- The whole script for the application -->
+<script type="text/javascript">
+	/*Global variables*/
+	var loggedIn = false;
+	var imgLoaded = 0;
+	var friends = null;
+	var totalToBeLoaded = 0;
+
+	/*Logs the user into Facebook*/
+	function loginFacebook() {
+		//initializes the facebook API
+		FB.init({appId : "175679282469826", status : true,cookie : true,xbfml : true});
+
+		document.getElementById("status").innerHTML = "Waiting for Facebook permission";
+	
+		//opens the Facebook login window for user
+		FB.login(function(response) {
+			if (response.session) {	
+				document.getElementById("status").innerHTML = "Logged In";
+				loggedIn = true;
+			} else {
+				document.getElementById("status").innerHTML = "You have not given required permissions";
+				loggedIn = false;
+			}
+		});
+		
+		//disables the login button after the user has loggedIn
+		if(loggedIn) {
+			document.getElementById("loginBtn").disabled = "disabled";
+		}
+	}
+
+	
+
+	//gets the list of friends of the logged in person
+	function getFriends() {
+		//if the person has not pressed login button
+		if(!loggedIn) {
+			loginFacebook();
+		}
+	
+		document.getElementById("status").innerHTML = "Now loading your friends' profile images...";
+
+		//if the person is loggedIn
+		if(loggedIn) {
+			document.getElementById("friendBtn").disabled = "disabled";
+			FB.api("/me/friends",function(response){
+					friends = response["data"];
+					totalToBeLoaded = friends.length;
+					loadImage(0);
+					
+			});
+		}
+	}
+
+	//load the images one at a time
+	function loadImage(imgNumber) {
+		var img = new Image();
+
+		//this is the link to profile image of a user. This link is well defined in Facebook API Documentation
+		img.src = "http://graph.facebook.com/"+friends[imgNumber].id+"/picture";
+		img.alt = img.title = friends[imgNumber].name;
+		imgLoaded++;
+		document.getElementById("pics").appendChild(img);
+		document.getElementById("count").innerHTML = imgLoaded+" of "+totalToBeLoaded + " images loaded";
+		
+		//ensures that the next image gets loaded only after an image has finished loading
+		img.onload = function() {loadImage(imgLoaded)};
+	    
+		if(imgLoaded==totalToBeLoaded) {
+			document.getElementById("status").innerHTML = "Loaded all friends' profile images...";
+		}
+	}
+
+	function init() {
+		document.getElementById("loginBtn").onclick = loginFacebook;
+		document.getElementById("friendBtn").onclick = getFriends;
+	}
+
+	//calls init function once all the resources are loaded
+	window.addEventListener("load",init,true);
+</script>
+</head>
+<body>
+<div id="fb-root"></div>
+      <div id="wrapper">
+		<input class="btn" type="button" id="loginBtn" value="Get Permissions from Facebook"/>
+		<input class="btn" type="button" value="Get Friends" id="friendBtn"/>
+		<!-- the following div will show the status messages during the workflow of application-->
+		<div id="status"></div>
+		<!-- shows the images loaded till now-->
+		<div id="count"></div>
+		<!-- holds all the profile pics-->
+		<div id="pics"></div>
+      </div>
+</body>
+</html>
